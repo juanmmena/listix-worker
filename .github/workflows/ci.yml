@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  commitlint:
+    name: Lint Commit Messages
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate PR commits with commitlint
+        uses: wagoid/commitlint-github-action@v6
+
+  pr-size:
+    name: Check Pull Request Size
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Analyze PR Size
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const additions = pr.additions;
+            const deletions = pr.deletions;
+            const totalChanges = additions + deletions;
+            
+            let size = 'XL';
+            let color = 'red';
+            if (totalChanges < 50) {
+              size = 'XS';
+              color = 'green';
+            } else if (totalChanges < 200) {
+              size = 'S';
+              color = 'blue';
+            } else if (totalChanges < 500) {
+              size = 'M';
+              color = 'yellow';
+            } else if (totalChanges < 1000) {
+              size = 'L';
+              color = 'orange';
+            }
+
+            const summary = [
+              '### Pull Request Size Analysis',
+              `| Metric | Count |`,
+              `| --- | --- |`,
+              `| Additions | +${additions} |`,
+              `| Deletions | -${deletions} |`,
+              `| **Total Changes** | **${totalChanges} lines** |`,
+              `| **Size Rating** | **${size}** |`,
+            ].join('\n');
+
+            await core.summary.addRaw(summary).write();
+
+  validate:
+    name: Lint, Build & Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run linter
+        run: pnpm run lint
+
+      - name: Build application
+        run: pnpm run build
+        env:
+          DATABASE_URL: postgresql://listix:listix@localhost:5432/listix?schema=public
+          JWT_ACCESS_SECRET: ci-jwt-access-secret-minimum-32-chars-long
+          PUBLIC_BASE_URL: http://localhost:3000
+
+      - name: Run unit tests with coverage
+        run: pnpm run test:cov
