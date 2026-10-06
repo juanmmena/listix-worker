@@ -7,6 +7,7 @@
   "license": "UNLICENSED",
   "packageManager": "pnpm@12.6.0",
   "scripts": {
+    "prebuild": "prisma generate",
     "build": "nest build",
     "deploy": "nest deploy",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
