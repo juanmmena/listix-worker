@@ -1,0 +1,111 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum MemberRole {
+  owner
+  admin
+  member
+
+  @@map("member_role")
+}
+
+model User {
+  id             String         @id @default(uuid()) @db.Uuid
+  displayName    String?        @map("display_name")
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSeenAt     DateTime       @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  refreshTokens  RefreshToken[]
+  createdLists   List[]         @relation("ListCreator")
+  memberships    ListMember[]
+  createdInvites ListInvite[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model List {
+  id        String       @id @db.Uuid
+  name      String
+  createdBy String       @map("created_by") @db.Uuid
+  isStarred Boolean      @default(false) @map("is_starred")
+  position  Int          @default(0)
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime     @default(now()) @map("updated_at") @db.Timestamptz(3)
+  deletedAt DateTime?    @map("deleted_at") @db.Timestamptz(3)
+  creator   User         @relation("ListCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  members   ListMember[]
+  items     ListItem[]
+  invites   ListInvite[]
+
+  @@index([createdBy])
+  @@index([updatedAt])
+  @@map("lists")
+}
+
+model ListMember {
+  id          String     @id @default(uuid()) @db.Uuid
+  listId      String     @map("list_id") @db.Uuid
+  userId      String     @map("user_id") @db.Uuid
+  role        MemberRole @default(member)
+  displayName String     @map("display_name")
+  email       String?
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  list        List       @relation(fields: [listId], references: [id], onDelete: Cascade)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, userId])
+  @@index([userId])
+  @@map("list_members")
+}
+
+model ListItem {
+  id          String    @id @db.Uuid
+  listId      String    @map("list_id") @db.Uuid
+  title       String
+  isCompleted Boolean   @default(false) @map("is_completed")
+  position    Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @default(now()) @map("updated_at") @db.Timestamptz(3)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
+  list        List      @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@index([listId])
+  @@index([updatedAt])
+  @@map("list_items")
+}
+
+model ListInvite {
+  id         String   @id @db.Uuid
+  listId     String   @map("list_id") @db.Uuid
+  tokenHash  String   @unique @map("token_hash")
+  inviteCode String?  @map("invite_code")
+  createdBy  String?  @map("created_by") @db.Uuid
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(3)
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  list       List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  creator    User?    @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([listId])
+  @@map("list_invites")
+}
