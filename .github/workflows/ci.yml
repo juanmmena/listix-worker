@@ -5,8 +5,25 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
 
 jobs:
+  pr-title:
+    name: Validate PR Title
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Validate PR title
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   commitlint:
     name: Lint Commit Messages
     runs-on: ubuntu-latest
