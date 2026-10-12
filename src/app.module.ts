@@ -5,6 +5,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { Env, validateEnv } from './config/env.schema';
 import { AuthModule } from './modules/auth/auth.module';
+import { InvitesModule } from './modules/invites/invites.module';
 import { ListsModule } from './modules/lists/lists.module';
 import { PrismaModule } from './shared/infrastructure/prisma/prisma.module';
 import { DomainErrorFilter } from './shared/presentation/domain-error.filter';
@@ -27,6 +28,7 @@ import { SharedModule } from './shared/shared.module';
     SharedModule,
     AuthModule,
     ListsModule,
+    InvitesModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: DomainErrorFilter }],
 })
