@@ -54,8 +54,6 @@ export class InviteLandingController {
       result,
       nonce,
       appScheme: this.config.get('APP_SCHEME', { infer: true }),
-      packageName: this.config.get('ANDROID_PACKAGE_NAME', { infer: true }),
-      playStoreUrl: this.config.get('PLAY_STORE_URL', { infer: true }),
     });
   }
 }
