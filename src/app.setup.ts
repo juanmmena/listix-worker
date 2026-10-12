@@ -5,6 +5,7 @@ import { Env } from './config/env.schema';
 
 export const ROOT_ROUTES = [
   { path: 'join/:credential', method: RequestMethod.GET },
+  { path: '.well-known/assetlinks.json', method: RequestMethod.GET },
   { path: 'health', method: RequestMethod.GET },
 ];
 

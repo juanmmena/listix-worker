@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+const playStoreUrl = z.url().refine((value) => {
+  const url = new URL(value);
+  return url.protocol === 'https:' && url.hostname === 'play.google.com';
+}, 'PLAY_STORE_URL must be an https://play.google.com URL');
+
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
@@ -13,6 +18,10 @@ export const envSchema = z.object({
   THROTTLE_TTL_MS: z.coerce.number().int().positive().default(60000),
   THROTTLE_LIMIT: z.coerce.number().int().positive().default(30),
   ALLOWED_APP_IDS: z.string().default('listix-app'),
+  PLAY_STORE_URL: playStoreUrl.default('https://play.google.com/store/apps/details?id=com.nmenag.listix'),
+  APP_SCHEME: z.string().regex(/^[a-z][a-z0-9+.-]*$/).default('listix'),
+  ANDROID_PACKAGE_NAME: z.string().default('com.nmenag.listix'),
+  ANDROID_SHA256_FINGERPRINTS: z.string().default('FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C'),
 });
 
 export type Env = z.infer<typeof envSchema>;
