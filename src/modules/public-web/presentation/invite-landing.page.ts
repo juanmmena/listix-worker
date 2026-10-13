@@ -1,4 +1,4 @@
-import { InviteValidationResult } from '../../invites/application/validate-invite.use-case';
+import type { InviteValidationResult } from '../../invites/application/invites.service';
 
 export interface InviteLandingPageInput {
   credential: string;

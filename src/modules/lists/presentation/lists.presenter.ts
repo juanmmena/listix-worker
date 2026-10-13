@@ -1,4 +1,4 @@
-import { ListSnapshot } from '../application/get-list-snapshot.use-case';
+import type { ListSnapshot } from '../application/lists.service';
 import { ListItem } from '../domain/list-item';
 import { ListMember } from '../domain/list-member';
 import { ShoppingList } from '../domain/shopping-list';

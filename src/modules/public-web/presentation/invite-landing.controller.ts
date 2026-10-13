@@ -15,14 +15,14 @@ import { Env } from '../../../config/env.schema';
 import { CryptoService } from '../../../shared/application/crypto.service';
 import { httpStatusFor } from '../../../shared/presentation/error-status.map';
 import { Public } from '../../auth/presentation/public.decorator';
-import { ValidateInviteUseCase } from '../../invites/application/validate-invite.use-case';
+import { InvitesService } from '../../invites/application/invites.service';
 import { renderInviteLandingPage } from './invite-landing.page';
 
 @Controller()
 @UseGuards(ThrottlerGuard)
 export class InviteLandingController {
   constructor(
-    private readonly validateInvite: ValidateInviteUseCase,
+    private readonly invitesService: InvitesService,
     private readonly crypto: CryptoService,
     private readonly config: ConfigService<Env, true>,
   ) {}
@@ -35,7 +35,7 @@ export class InviteLandingController {
     @Headers('accept') accept: string | undefined,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const result = await this.validateInvite.execute(credential);
+    const result = await this.invitesService.validate(credential);
     response.status(result.valid ? HttpStatus.OK : httpStatusFor(result.errorCode ?? ''));
     response.setHeader('Cache-Control', 'no-store, max-age=0');
 

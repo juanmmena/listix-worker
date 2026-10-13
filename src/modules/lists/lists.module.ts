@@ -1,14 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ChangeMemberRoleUseCase } from './application/change-member-role.use-case';
-import { DeleteItemUseCase } from './application/delete-item.use-case';
-import { DeleteListUseCase } from './application/delete-list.use-case';
-import { GetListSnapshotUseCase } from './application/get-list-snapshot.use-case';
-import { GetMyListsUseCase } from './application/get-my-lists.use-case';
+import { ItemsService } from './application/items.service';
 import { ListAccessService } from './application/list-access.service';
 import { ListEventPublisher } from './application/list-event.publisher';
-import { RemoveMemberUseCase } from './application/remove-member.use-case';
-import { SyncListUseCase } from './application/sync-list.use-case';
-import { UpsertItemUseCase } from './application/upsert-item.use-case';
+import { ListsService } from './application/lists.service';
+import { MembersService } from './application/members.service';
 import {
   ListItemRepository,
   ListMemberRepository,
@@ -30,21 +25,19 @@ import { MembersController } from './presentation/members.controller';
     { provide: ListItemRepository, useClass: PrismaListItemRepository },
     { provide: ListEventPublisher, useClass: EventEmitterListEventPublisher },
     ListAccessService,
-    GetMyListsUseCase,
-    SyncListUseCase,
-    GetListSnapshotUseCase,
-    DeleteListUseCase,
-    UpsertItemUseCase,
-    DeleteItemUseCase,
-    ChangeMemberRoleUseCase,
-    RemoveMemberUseCase,
+    ListsService,
+    ItemsService,
+    MembersService,
   ],
   exports: [
     ListRepository,
     ListMemberRepository,
+    ListItemRepository,
     ListAccessService,
     ListEventPublisher,
-    GetListSnapshotUseCase,
+    ListsService,
+    ItemsService,
+    MembersService,
   ],
 })
 export class ListsModule {}

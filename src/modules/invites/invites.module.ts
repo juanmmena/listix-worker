@@ -3,14 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { Env } from '../../config/env.schema';
 import { ListsModule } from '../lists/lists.module';
 import {
-  CreateInviteUseCase,
   INVITE_SETTINGS,
   InviteSettings,
-} from './application/create-invite.use-case';
+  InvitesService,
+} from './application/invites.service';
 import { InviteFinder } from './application/invite-finder';
-import { JoinListUseCase } from './application/join-list.use-case';
-import { RevokeInviteUseCase } from './application/revoke-invite.use-case';
-import { ValidateInviteUseCase } from './application/validate-invite.use-case';
 import { InviteRepository } from './domain/invite.repository';
 import { PrismaInviteRepository } from './infrastructure/prisma-invite.repository';
 import { InvitesController } from './presentation/invites.controller';
@@ -22,10 +19,7 @@ import { ListInvitesController } from './presentation/list-invites.controller';
   providers: [
     { provide: InviteRepository, useClass: PrismaInviteRepository },
     InviteFinder,
-    CreateInviteUseCase,
-    RevokeInviteUseCase,
-    ValidateInviteUseCase,
-    JoinListUseCase,
+    InvitesService,
     {
       provide: INVITE_SETTINGS,
       inject: [ConfigService],
@@ -35,6 +29,6 @@ import { ListInvitesController } from './presentation/list-invites.controller';
       }),
     },
   ],
-  exports: [ValidateInviteUseCase],
+  exports: [InvitesService],
 })
 export class InvitesModule {}

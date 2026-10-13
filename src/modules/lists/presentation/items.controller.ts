@@ -9,17 +9,13 @@ import {
 } from '@nestjs/common';
 import type { AuthenticatedUser } from '../../auth/application/access-token.service';
 import { CurrentUser } from '../../auth/presentation/current-user.decorator';
-import { DeleteItemUseCase } from '../application/delete-item.use-case';
-import { UpsertItemUseCase } from '../application/upsert-item.use-case';
+import { ItemsService } from '../application/items.service';
 import { DeleteItemQueryDto, UpsertItemDto } from './lists.dto';
 import { ItemPresenter } from './lists.presenter';
 
 @Controller('lists/:listId/items')
 export class ItemsController {
-  constructor(
-    private readonly upsertItem: UpsertItemUseCase,
-    private readonly deleteItem: DeleteItemUseCase,
-  ) {}
+  constructor(private readonly itemsService: ItemsService) {}
 
   @Put(':itemId')
   async upsert(
@@ -28,7 +24,7 @@ export class ItemsController {
     @Body() dto: UpsertItemDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const result = await this.upsertItem.execute({
+    const result = await this.itemsService.upsert({
       listId,
       itemId,
       userId: user.userId,
@@ -50,7 +46,7 @@ export class ItemsController {
     @Query() query: DeleteItemQueryDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.deleteItem.execute({
+    return this.itemsService.delete({
       listId,
       itemId,
       userId: user.userId,

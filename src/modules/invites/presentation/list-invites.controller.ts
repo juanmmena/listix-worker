@@ -11,16 +11,12 @@ import {
 import { ThrottlerGuard } from '@nestjs/throttler';
 import type { AuthenticatedUser } from '../../auth/application/access-token.service';
 import { CurrentUser } from '../../auth/presentation/current-user.decorator';
-import { CreateInviteUseCase } from '../application/create-invite.use-case';
-import { RevokeInviteUseCase } from '../application/revoke-invite.use-case';
+import { InvitesService } from '../application/invites.service';
 
 @Controller('lists/:listId/invites')
 @UseGuards(ThrottlerGuard)
 export class ListInvitesController {
-  constructor(
-    private readonly createInvite: CreateInviteUseCase,
-    private readonly revokeInvite: RevokeInviteUseCase,
-  ) {}
+  constructor(private readonly invitesService: InvitesService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -28,7 +24,7 @@ export class ListInvitesController {
     @Param('listId', ParseUUIDPipe) listId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.createInvite.execute({ listId, userId: user.userId });
+    return this.invitesService.create({ listId, userId: user.userId });
   }
 
   @Delete('active')
@@ -37,6 +33,6 @@ export class ListInvitesController {
     @Param('listId', ParseUUIDPipe) listId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    await this.revokeInvite.execute({ listId, userId: user.userId });
+    await this.invitesService.revoke({ listId, userId: user.userId });
   }
 }
