@@ -13,6 +13,7 @@ export const envSchema = z.object({
   THROTTLE_TTL_MS: z.coerce.number().int().positive().default(60000),
   THROTTLE_LIMIT: z.coerce.number().int().positive().default(30),
   ALLOWED_APP_IDS: z.string().default('listix-app'),
+  APP_SCHEME: z.string().regex(/^[a-z][a-z0-9+.-]*$/).default('listix'),
 });
 
 export type Env = z.infer<typeof envSchema>;

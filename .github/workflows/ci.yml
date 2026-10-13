@@ -39,10 +39,10 @@ jobs:
         with:
           run_install: false
 
-      - name: Set up Node.js 22
+      - name: Set up Node.js 24
         uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Validate PR commits with commitlint
         uses: wagoid/commitlint-github-action@v6
@@ -105,10 +105,10 @@ jobs:
         with:
           run_install: false
 
-      - name: Set up Node.js 22
+      - name: Set up Node.js 24
         uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: 'pnpm'
 
       - name: Install dependencies

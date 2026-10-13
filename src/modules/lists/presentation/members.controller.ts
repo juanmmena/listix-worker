@@ -11,9 +11,8 @@ import {
 } from '@nestjs/common';
 import type { AuthenticatedUser } from '../../auth/application/access-token.service';
 import { CurrentUser } from '../../auth/presentation/current-user.decorator';
-import { ChangeMemberRoleUseCase } from '../application/change-member-role.use-case';
 import { ListAccessService } from '../application/list-access.service';
-import { RemoveMemberUseCase } from '../application/remove-member.use-case';
+import { MembersService } from '../application/members.service';
 import { ListMemberRepository } from '../domain/repositories';
 import { ChangeMemberRoleDto } from './lists.dto';
 import { MemberPresenter } from './lists.presenter';
@@ -23,8 +22,7 @@ export class MembersController {
   constructor(
     private readonly access: ListAccessService,
     private readonly members: ListMemberRepository,
-    private readonly changeRole: ChangeMemberRoleUseCase,
-    private readonly removeMember: RemoveMemberUseCase,
+    private readonly membersService: MembersService,
   ) {}
 
   @Get()
@@ -44,7 +42,7 @@ export class MembersController {
     @Body() dto: ChangeMemberRoleDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const member = await this.changeRole.execute({
+    const member = await this.membersService.changeRole({
       listId,
       actorUserId: user.userId,
       targetUserId,
@@ -59,7 +57,7 @@ export class MembersController {
     @Param('listId', ParseUUIDPipe) listId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    await this.removeMember.execute({
+    await this.membersService.remove({
       listId,
       actorUserId: user.userId,
       targetUserId: user.userId,
@@ -73,7 +71,7 @@ export class MembersController {
     @Param('userId', ParseUUIDPipe) targetUserId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    await this.removeMember.execute({
+    await this.membersService.remove({
       listId,
       actorUserId: user.userId,
       targetUserId,

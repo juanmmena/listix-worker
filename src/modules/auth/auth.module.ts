@@ -4,10 +4,8 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { Env } from '../../config/env.schema';
 import { AccessTokenService } from './application/access-token.service';
-import { GetCurrentUserUseCase } from './application/get-current-user.use-case';
-import { RefreshSessionUseCase } from './application/refresh-session.use-case';
+import { AuthService } from './application/auth.service';
 import { AUTH_SETTINGS, AuthSettings, SessionIssuer } from './application/session-issuer';
-import { SignInAnonymouslyUseCase } from './application/sign-in-anonymously.use-case';
 import { RefreshTokenRepository, UserRepository } from './domain/repositories';
 import { JwtAccessTokenService } from './infrastructure/jwt-access-token.service';
 import { PrismaRefreshTokenRepository } from './infrastructure/prisma-refresh-token.repository';
@@ -38,11 +36,9 @@ import { JwtAuthGuard } from './presentation/jwt-auth.guard';
       }),
     },
     SessionIssuer,
-    SignInAnonymouslyUseCase,
-    RefreshSessionUseCase,
-    GetCurrentUserUseCase,
+    AuthService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
-  exports: [AccessTokenService],
+  exports: [AccessTokenService, AuthService],
 })
 export class AuthModule {}

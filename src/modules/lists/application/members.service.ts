@@ -16,8 +16,14 @@ export interface ChangeMemberRoleCommand {
   role: MemberRole;
 }
 
+export interface RemoveMemberCommand {
+  listId: string;
+  actorUserId: string;
+  targetUserId: string;
+}
+
 @Injectable()
-export class ChangeMemberRoleUseCase {
+export class MembersService {
   constructor(
     private readonly transactions: TransactionManager,
     private readonly members: ListMemberRepository,
@@ -26,7 +32,7 @@ export class ChangeMemberRoleUseCase {
     private readonly clock: Clock,
   ) {}
 
-  async execute(command: ChangeMemberRoleCommand): Promise<ListMember> {
+  async changeRole(command: ChangeMemberRoleCommand): Promise<ListMember> {
     const updatedMember = await this.transactions.run(
       async () => {
         const actor = await this.access.requireMember(command.listId, command.actorUserId);
@@ -48,5 +54,25 @@ export class ChangeMemberRoleUseCase {
       }),
     );
     return updatedMember;
+  }
+
+  async remove(command: RemoveMemberCommand): Promise<void> {
+    const now = this.clock.now();
+    await this.transactions.run(
+      async () => {
+        const actor = await this.access.requireMember(command.listId, command.actorUserId);
+        const target = await this.members.find(command.listId, command.targetUserId);
+        if (!target) {
+          throw new MemberNotFoundError();
+        }
+        MembershipPolicy.assertCanRemove(actor, target);
+        await this.members.remove(command.listId, command.targetUserId);
+      },
+      { lockKey: command.listId },
+    );
+
+    this.events.publish(
+      new ListChangedEvent(command.listId, 'member', command.targetUserId, 'deleted', now),
+    );
   }
 }

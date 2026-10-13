@@ -11,25 +11,17 @@ import {
 } from '@nestjs/common';
 import type { AuthenticatedUser } from '../../auth/application/access-token.service';
 import { CurrentUser } from '../../auth/presentation/current-user.decorator';
-import { DeleteListUseCase } from '../application/delete-list.use-case';
-import { GetListSnapshotUseCase } from '../application/get-list-snapshot.use-case';
-import { GetMyListsUseCase } from '../application/get-my-lists.use-case';
-import { SyncListUseCase } from '../application/sync-list.use-case';
+import { ListsService } from '../application/lists.service';
 import { SyncListDto } from './lists.dto';
 import { ListPresenter, SnapshotPresenter } from './lists.presenter';
 
 @Controller('lists')
 export class ListsController {
-  constructor(
-    private readonly getMyLists: GetMyListsUseCase,
-    private readonly syncList: SyncListUseCase,
-    private readonly getSnapshot: GetListSnapshotUseCase,
-    private readonly deleteList: DeleteListUseCase,
-  ) {}
+  constructor(private readonly listsService: ListsService) {}
 
   @Get()
   async findMine(@CurrentUser() user: AuthenticatedUser) {
-    const lists = await this.getMyLists.execute(user.userId);
+    const lists = await this.listsService.findMine(user.userId);
     return lists.map(ListPresenter.toResponse);
   }
 
@@ -39,7 +31,7 @@ export class ListsController {
     @Body() dto: SyncListDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const result = await this.syncList.execute({
+    const result = await this.listsService.sync({
       listId,
       userId: user.userId,
       name: dto.name,
@@ -60,7 +52,7 @@ export class ListsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return SnapshotPresenter.toResponse(
-      await this.getSnapshot.execute({ listId, userId: user.userId }),
+      await this.listsService.getSnapshot({ listId, userId: user.userId }),
     );
   }
 
@@ -70,6 +62,6 @@ export class ListsController {
     @Param('listId', ParseUUIDPipe) listId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    await this.deleteList.execute({ listId, userId: user.userId });
+    await this.listsService.delete({ listId, userId: user.userId });
   }
 }
