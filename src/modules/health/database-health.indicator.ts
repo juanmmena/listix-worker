@@ -15,7 +15,9 @@ export class DatabaseHealthIndicator {
       await this.prisma.$queryRaw`SELECT 1`;
       return indicator.up();
     } catch (error) {
-      return indicator.down({ message: error instanceof Error ? error.message : 'unreachable' });
+      const rawMessage = error instanceof Error ? error.message.trim() : 'unreachable';
+      const cleanMessage = rawMessage.replace(/^Invalid `prisma\.\$queryRaw\(\)` invocation:\s*/, '').trim();
+      return indicator.down({ message: cleanMessage || 'Database connection refused or unreachable' });
     }
   }
 }
