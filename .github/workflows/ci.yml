@@ -54,8 +54,9 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      issues: write
     steps:
-      - name: Analyze PR Size
+      - name: Analyze PR Size & Apply Label
         uses: actions/github-script@v9
         with:
           script: |
@@ -63,21 +64,64 @@ jobs:
             const additions = pr.additions;
             const deletions = pr.deletions;
             const totalChanges = additions + deletions;
-            
-            let size = 'XL';
-            let color = 'red';
-            if (totalChanges < 50) {
-              size = 'XS';
-              color = 'green';
-            } else if (totalChanges < 200) {
-              size = 'S';
-              color = 'blue';
-            } else if (totalChanges < 500) {
-              size = 'M';
-              color = 'yellow';
-            } else if (totalChanges < 1000) {
-              size = 'L';
-              color = 'orange';
+
+            const sizeCategories = [
+              { name: 'size/XS', max: 50, color: '3CBF00', description: 'Tiny pull request (< 50 lines)' },
+              { name: 'size/S',  max: 200, color: '5D9801', description: 'Small pull request (50-200 lines)' },
+              { name: 'size/M',  max: 500, color: 'EAA900', description: 'Medium pull request (200-500 lines)' },
+              { name: 'size/L',  max: 1000, color: 'D15600', description: 'Large pull request (500-1000 lines)' },
+              { name: 'size/XL', max: Infinity, color: 'B60205', description: 'Very large pull request (> 1000 lines)' },
+            ];
+
+            const matchedCategory = sizeCategories.find(c => totalChanges < c.max) || sizeCategories[sizeCategories.length - 1];
+            const targetLabel = matchedCategory.name;
+            const sizeNames = sizeCategories.map(c => c.name);
+
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: matchedCategory.name,
+              });
+            } catch (err) {
+              if (err.status === 404) {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: matchedCategory.name,
+                  color: matchedCategory.color,
+                  description: matchedCategory.description,
+                });
+              } else {
+                throw err;
+              }
+            }
+
+            const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+            });
+
+            for (const label of currentLabels) {
+              if (sizeNames.includes(label.name) && label.name !== targetLabel) {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  name: label.name,
+                });
+              }
+            }
+
+            const alreadyHasLabel = currentLabels.some(label => label.name === targetLabel);
+            if (!alreadyHasLabel) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: [targetLabel],
+              });
             }
 
             const summary = [
@@ -87,7 +131,7 @@ jobs:
               `| Additions | +${additions} |`,
               `| Deletions | -${deletions} |`,
               `| **Total Changes** | **${totalChanges} lines** |`,
-              `| **Size Rating** | **${size}** |`,
+              `| **Size Rating** | **${targetLabel}** |`,
             ].join('\n');
 
             await core.summary.addRaw(summary).write();
