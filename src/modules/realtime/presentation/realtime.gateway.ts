@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { Logger, UsePipes, ValidationPipe } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -7,20 +7,20 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import type { Namespace, Socket } from 'socket.io';
+import type { Namespace } from 'socket.io';
 import { DomainError } from '../../../shared/domain/domain-error';
 import { AccessTokenService } from '../../auth/application/access-token.service';
 import { ListAccessService } from '../../lists/application/list-access.service';
 import type { ListChangedEvent } from '../../lists/domain/list-changed.event';
 import { ListSubscriptionDto } from './dto/list-subscription.dto';
-
-export interface RealtimeSubscriptionAck {
-  ok: boolean;
-  listId: string;
-  errorCode?: string;
-}
+import type {
+  AuthenticatedSocket,
+  ListChangedBroadcastPayload,
+  RealtimeSubscriptionAck,
+} from './realtime.types';
 
 @WebSocketGateway({ namespace: '/realtime', cors: { origin: true } })
+@UsePipes(new ValidationPipe({ whitelist: true }))
 export class RealtimeGateway implements OnGatewayConnection {
   private readonly logger = new Logger(RealtimeGateway.name);
 
@@ -32,7 +32,7 @@ export class RealtimeGateway implements OnGatewayConnection {
     private readonly listAccess: ListAccessService,
   ) {}
 
-  async handleConnection(client: Socket): Promise<void> {
+  async handleConnection(client: AuthenticatedSocket): Promise<void> {
     try {
       const token = this.extractToken(client);
       if (!token) {
@@ -49,15 +49,15 @@ export class RealtimeGateway implements OnGatewayConnection {
   @SubscribeMessage('list:subscribe')
   @SubscribeMessage('subscribe')
   async subscribe(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() payload: ListSubscriptionDto | string,
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() body: ListSubscriptionDto,
   ): Promise<RealtimeSubscriptionAck> {
-    const listId = typeof payload === 'string' ? payload : payload?.listId;
+    const listId = body?.listId;
     if (!listId) {
       return { ok: false, listId: '', errorCode: 'VALIDATION_FAILED' };
     }
 
-    const userId = client.data?.userId as string | undefined;
+    const userId = client.data?.userId;
     if (!userId) {
       return { ok: false, listId, errorCode: 'UNAUTHENTICATED' };
     }
@@ -75,10 +75,10 @@ export class RealtimeGateway implements OnGatewayConnection {
   @SubscribeMessage('list:unsubscribe')
   @SubscribeMessage('unsubscribe')
   async unsubscribe(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() payload: ListSubscriptionDto | string,
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() body: ListSubscriptionDto,
   ): Promise<RealtimeSubscriptionAck> {
-    const listId = typeof payload === 'string' ? payload : payload?.listId;
+    const listId = body?.listId;
     if (!listId) {
       return { ok: false, listId: '', errorCode: 'VALIDATION_FAILED' };
     }
@@ -93,7 +93,7 @@ export class RealtimeGateway implements OnGatewayConnection {
 
   broadcastListChanged(event: ListChangedEvent): void {
     const room = this.getRoomName(event.listId);
-    const payload: Record<string, unknown> = {
+    const payload: ListChangedBroadcastPayload = {
       listId: event.listId,
       entity: event.entity,
       entityId: event.entityId,
@@ -123,7 +123,7 @@ export class RealtimeGateway implements OnGatewayConnection {
     }
   }
 
-  private extractToken(client: Socket): string | null {
+  private extractToken(client: AuthenticatedSocket): string | null {
     const authToken = client.handshake.auth?.token;
     if (typeof authToken === 'string' && authToken.trim().length > 0) {
       return authToken.trim();
