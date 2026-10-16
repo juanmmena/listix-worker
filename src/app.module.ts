@@ -9,6 +9,7 @@ import { HealthModule } from './modules/health/health.module';
 import { InvitesModule } from './modules/invites/invites.module';
 import { ListsModule } from './modules/lists/lists.module';
 import { PublicWebModule } from './modules/public-web/public-web.module';
+import { RealtimeModule } from './modules/realtime/realtime.module';
 import { PrismaModule } from './shared/infrastructure/prisma/prisma.module';
 import { DomainErrorFilter } from './shared/presentation/domain-error.filter';
 import { SharedModule } from './shared/shared.module';
@@ -31,6 +32,7 @@ import { SharedModule } from './shared/shared.module';
     AuthModule,
     ListsModule,
     InvitesModule,
+    RealtimeModule,
     PublicWebModule,
     HealthModule,
   ],
