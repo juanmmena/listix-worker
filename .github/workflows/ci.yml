@@ -173,3 +173,10 @@ jobs:
 
       - name: Run unit tests with coverage
         run: pnpm run test:cov
+
+      - name: Run end-to-end tests
+        run: pnpm run test:e2e
+        env:
+          DATABASE_URL: postgresql://listix:listix@localhost:5432/listix?schema=public
+          JWT_ACCESS_SECRET: ci-jwt-access-secret-minimum-32-chars-long
+          PUBLIC_BASE_URL: http://localhost:3000
