@@ -1,3 +1,5 @@
+process.env.THROTTLE_LIMIT = '30';
+
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
@@ -10,6 +12,8 @@ describe('Throttling Integration (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
+    process.env.THROTTLE_LIMIT = '30';
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })

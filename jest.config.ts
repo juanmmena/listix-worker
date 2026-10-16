@@ -23,7 +23,9 @@ const config: Config = {
   },
   collectCoverageFrom: [
     'src/**/*.(t|j)s',
+    '!src/main.ts',
     '!src/generated/**',
+    '!src/**/*.module.ts',
   ],
   coverageDirectory: './coverage',
   testEnvironment: 'node',
