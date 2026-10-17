@@ -1,0 +1,42 @@
+# Dependency directories
+node_modules/
+.pnpm-store/
+
+# Build and coverage outputs
+dist/
+coverage/
+*.tsbuildinfo
+
+# Test files and fixtures
+test/
+**/*.spec.ts
+**/*.e2e-spec.ts
+
+# Git and GitHub
+.git/
+.github/
+.husky/
+
+# Environment files and credentials
+.env
+.env.*
+!.env.example
+
+# IDE and Editor artifacts
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# AGY / Antigravity Agent metadata
+.agents/
+.kilo/
+backendguide.md
+
+# Logs and OS files
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+.DS_Store
+Thumbs.db

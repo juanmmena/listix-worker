@@ -2,18 +2,47 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: listix
+      POSTGRES_PASSWORD: listix
       POSTGRES_DB: listix
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U listix -d listix"]
+      test: ['CMD-SHELL', 'pg_isready -U listix -d listix']
       interval: 5s
       timeout: 3s
       retries: 10
+
+  migrate:
+    build:
+      context: .
+      target: migrate
+    environment:
+      DATABASE_URL: postgresql://listix:listix@postgres:5432/listix?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      target: runtime
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://listix:listix@postgres:5432/listix?schema=public
+      JWT_ACCESS_SECRET: replace-with-openssl-rand-base64-48-output-test-secret-at-least-32-chars
+      PUBLIC_BASE_URL: http://localhost:3000
+      CORS_ORIGINS: '*'
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   pgdata:
