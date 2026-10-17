@@ -7,12 +7,14 @@ import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
 import { DatabaseHealthIndicator } from '../src/modules/health/database-health.indicator';
 import { InvitesService } from '../src/modules/invites/application/invites.service';
+import { TestDbHelper } from './e2e/test-db.helper';
 
 describe('Throttling Integration (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
     process.env.THROTTLE_LIMIT = '30';
+    await TestDbHelper.setup();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -39,6 +41,7 @@ describe('Throttling Integration (e2e)', () => {
 
   afterAll(async () => {
     await app.close();
+    await TestDbHelper.teardown();
   });
 
   it('rate limits GET /api/v1/invites/:credential on the 31st request within TTL', async () => {
