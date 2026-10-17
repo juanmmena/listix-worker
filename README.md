@@ -1,114 +1,202 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Listix Worker
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend service for the **Listix** collaborative, offline-first shopping list application. Built with **NestJS**, **PostgreSQL (Prisma ORM)**, and **WebSockets (Socket.IO)** following **Clean Architecture** principles.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Architecture & System Overview
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Listix is designed offline-first: clients maintain local SQLite/embedded state and interact with the backend service when sharing or synchronizing lists with collaborators.
 
-## Project setup
-
-```bash
-$ pnpm install
+```
+presentation (controllers, DTOs, Socket.IO gateways, error filters)
+       ↓
+application (services, transaction orchestrators, event publishers)
+       ↓
+     domain (entities, value objects, membership policies, domain errors)
+       ↑
+infrastructure (prisma repositories, crypto/hash adapters, system clocks)
 ```
 
-## Compile and run the project
+### Core Capabilities:
+
+1. **Anonymous Identity Management**: Secure device authentication using JWT access tokens (15-min TTL) and cryptographically hashed, rotatable refresh tokens (90-day TTL).
+2. **Deterministic State Synchronization**: Last-Write-Wins (LWW) conflict resolution for shopping lists and items based on monotonic client timestamps (`updatedAt`). Supports soft deletion and item resurrection.
+3. **Collaboration & Sharing Lifecycle**:
+   - Short, human-friendly Crockford Base32 invite codes (`inviteCode`, 6 chars) and long URL tokens (`token`).
+   - Strict 5-member limit per list (`MAX_LIST_MEMBERS = 5`).
+   - Transactional PostgreSQL advisory locks (`pg_advisory_xact_lock`) ensuring serialized, race-free member joining.
+4. **Realtime Broadcasts**: Live WebSocket room updates (`list.changed`) over `/realtime` via Socket.IO, with automatic client eviction when access is revoked.
+5. **Platform-Agnostic Web Fallback**: Public web landing route (`/join/:credential`) offering universal deep-linking (`${APP_SCHEME}://join/${credential}`) and one-click code copying.
+
+---
+
+## Tech Stack
+
+- **Runtime**: [Node.js](https://nodejs.org/) (v24 LTS)
+- **Framework**: [NestJS](https://nestjs.com/) (v12)
+- **Database**: [PostgreSQL](https://www.postgresql.org/) (v17)
+- **ORM**: [Prisma](https://www.prisma.io/) (v7)
+- **Realtime**: [Socket.IO](https://socket.io/)
+- **Linter**: [oxlint](https://oxc.rs/) & [Prettier](https://prettier.io/)
+- **Package Manager**: [pnpm](https://pnpm.io/) (v12)
+- **Testing**: [Jest](https://jestjs.io/) & [Testcontainers](https://node.testcontainers.org/)
+- **Containerization**: [Docker](https://www.docker.com/) (multi-stage Alpine builds)
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- **Node.js** >= 24.0.0
+- **pnpm** >= 12.0.0
+- **Docker** & **Docker Compose**
+
+### 1. Installation
+
+Clone the repository and install dependencies:
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+git clone https://github.com/listix-app/listix-worker.git
+cd listix-worker
+pnpm install
 ```
 
-## Run tests
+### 2. Environment Configuration
+
+Copy the example environment file and adjust if necessary:
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+cp .env.example .env
 ```
 
-## Deployment
+| Variable                 | Description                                            | Default                                                          |
+| :----------------------- | :----------------------------------------------------- | :--------------------------------------------------------------- |
+| `NODE_ENV`               | Environment mode (`development`, `production`, `test`) | `development`                                                    |
+| `PORT`                   | HTTP server listening port                             | `3000`                                                           |
+| `DATABASE_URL`           | PostgreSQL connection string                           | `postgresql://listix:listix@localhost:5432/listix?schema=public` |
+| `JWT_ACCESS_SECRET`      | Secret key for signing access tokens (>= 32 chars)     | —                                                                |
+| `JWT_ACCESS_TTL_SECONDS` | Access token lifespan in seconds                       | `900` (15 min)                                                   |
+| `REFRESH_TOKEN_TTL_DAYS` | Refresh token lifespan in days                         | `90`                                                             |
+| `PUBLIC_BASE_URL`        | Public API base URL used for shareable invite links    | `http://localhost:3000`                                          |
+| `APP_SCHEME`             | Custom URI deep-link scheme                            | `listix`                                                         |
+| `THROTTLE_TTL_MS`        | Rate limiting sliding window in ms                     | `60000` (1 min)                                                  |
+| `THROTTLE_LIMIT`         | Max requests per IP in rate window                     | `30`                                                             |
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### 3. Start Database & Run Migrations
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Start the local PostgreSQL container:
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+docker compose up -d postgres
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Generate the Prisma Client and run migrations:
 
-## Observability
+```bash
+pnpm run db:migrate
+```
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+### 4. Run the Application
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+```bash
+# Start in watch mode for development
+pnpm run start:dev
 
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+# Start in production mode
+pnpm run start:prod
+```
 
-## Resources
+---
 
-Check out a few resources that may come in handy when working with NestJS:
+## API & Gateway Surface
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### REST Endpoints (`/api/v1`)
 
-## Support
+- `POST /api/v1/auth/anonymous`: Create a new anonymous user session.
+- `POST /api/v1/auth/refresh`: Rotate refresh token and issue new session tokens.
+- `GET /api/v1/auth/me`: Retrieve current authenticated user profile.
+- `GET /api/v1/lists`: List all shopping lists the user belongs to.
+- `PUT /api/v1/lists/:listId`: Create or sync a shopping list (Last-Write-Wins).
+- `GET /api/v1/lists/:listId`: Retrieve complete list snapshot (list details, active items, members).
+- `DELETE /api/v1/lists/:listId`: Soft-delete a list (managers/owners only).
+- `PUT /api/v1/lists/:listId/items/:itemId`: Upsert an item (Last-Write-Wins, resurrection).
+- `DELETE /api/v1/lists/:listId/items/:itemId`: Soft-delete an item.
+- `POST /api/v1/lists/:listId/invites`: Create or rotate active invite for list.
+- `DELETE /api/v1/lists/:listId/invites/active`: Revoke active invite link and code.
+- `GET /api/v1/invites/:credential`: Validate invite code or token (rate-limited).
+- `POST /api/v1/invites/join`: Join a list using an invite credential.
+- `PATCH /api/v1/lists/:listId/members/:userId`: Promote or demote member role.
+- `DELETE /api/v1/lists/:listId/members/:userId`: Remove collaborator from list.
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### Public & Health Routes
 
-## Stay in touch
+- `GET /join/:credential`: Universal HTML landing page with deep-link redirection and code fallback.
+- `GET /health`: NestJS Terminus database liveness & health check.
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+### Realtime Gateway (`/realtime`)
+
+- **Connection**: Requires `auth: { token: "<jwt_access_token>" }` in Socket.IO handshake.
+- **Client Events**:
+  - `list:subscribe` (`{ listId: string }`): Join list notification room.
+  - `list:unsubscribe` (`{ listId: string }`): Leave list notification room.
+- **Server Events**:
+  - `list.changed`: Broadcasted when lists, items, or members are modified.
+  - `session.error`: Emitted when connection token validation fails.
+
+---
+
+## Testing
+
+The project includes an extensive test suite verifying pure domain logic, membership invariants, rate limiting, and real PostgreSQL concurrent joins:
+
+```bash
+# Run unit tests
+pnpm run test
+
+# Run end-to-end integration tests (real database)
+pnpm run test:e2e
+
+# Run test coverage
+pnpm run test:cov
+```
+
+---
+
+## Docker & Production Deployment
+
+### Multi-Stage Dockerfile Targets
+
+- **`migrate`**: Release job container running database migrations before traffic switch.
+- **`runtime`**: Minimal production image running under non-root `node` user on Alpine.
+
+```bash
+# Build migrate target
+docker build --target migrate -t listix-worker:migrate .
+
+# Build runtime target
+docker build --target runtime -t listix-worker:latest .
+```
+
+### Full Stack with Docker Compose
+
+Run the entire stack (PostgreSQL + Migrations + API worker):
+
+```bash
+docker compose up --build
+```
+
+---
+
+## Code Quality & Standards
+
+- **Linting**: Fast linting with `oxlint src/ test/` via `pnpm run lint`.
+- **Pre-commit**: Husky git hooks with `lint-staged` running `oxlint --fix` and `prettier --write`.
+- **Commits**: Conventional Commits standard enforced via `commitlint`.
+
+---
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+This project is proprietary and confidential. All rights reserved.
