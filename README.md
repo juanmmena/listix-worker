@@ -71,18 +71,18 @@ Copy the example environment file and adjust if necessary:
 cp .env.example .env
 ```
 
-| Variable                 | Description                                            | Default                                                          |
-| :----------------------- | :----------------------------------------------------- | :--------------------------------------------------------------- |
-| `NODE_ENV`               | Environment mode (`development`, `production`, `test`) | `development`                                                    |
-| `PORT`                   | HTTP server listening port                             | `3000`                                                           |
-| `DATABASE_URL`           | PostgreSQL connection string                           | `postgresql://listix:listix@localhost:5432/listix?schema=public` |
-| `JWT_ACCESS_SECRET`      | Secret key for signing access tokens (>= 32 chars)     | —                                                                |
-| `JWT_ACCESS_TTL_SECONDS` | Access token lifespan in seconds                       | `900` (15 min)                                                   |
-| `REFRESH_TOKEN_TTL_DAYS` | Refresh token lifespan in days                         | `90`                                                             |
-| `PUBLIC_BASE_URL`        | Public API base URL used for shareable invite links    | `http://localhost:3000`                                          |
-| `APP_SCHEME`             | Custom URI deep-link scheme                            | `listix`                                                         |
-| `THROTTLE_TTL_MS`        | Rate limiting sliding window in ms                     | `60000` (1 min)                                                  |
-| `THROTTLE_LIMIT`         | Max requests per IP in rate window                     | `30`                                                             |
+| Variable                 | Description                                            | Default                                                              |
+| :----------------------- | :----------------------------------------------------- | :------------------------------------------------------------------- |
+| `NODE_ENV`               | Environment mode (`development`, `production`, `test`) | `development`                                                        |
+| `PORT`                   | HTTP server listening port                             | `3000`                                                               |
+| `DATABASE_URL`           | PostgreSQL connection string                           | `postgresql://postgres:postgres@localhost:5432/listix?schema=public` |
+| `JWT_ACCESS_SECRET`      | Secret key for signing access tokens (>= 32 chars)     | —                                                                    |
+| `JWT_ACCESS_TTL_SECONDS` | Access token lifespan in seconds                       | `900` (15 min)                                                       |
+| `REFRESH_TOKEN_TTL_DAYS` | Refresh token lifespan in days                         | `90`                                                                 |
+| `PUBLIC_BASE_URL`        | Public API base URL used for shareable invite links    | `http://localhost:3000`                                              |
+| `APP_SCHEME`             | Custom URI deep-link scheme                            | `listix`                                                             |
+| `THROTTLE_TTL_MS`        | Rate limiting sliding window in ms                     | `60000` (1 min)                                                      |
+| `THROTTLE_LIMIT`         | Max requests per IP in rate window                     | `30`                                                                 |
 
 ### 3. Start Database & Run Migrations
 

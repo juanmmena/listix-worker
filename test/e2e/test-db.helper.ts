@@ -12,7 +12,7 @@ export class TestDbHelper {
   static async setup(): Promise<string> {
     const defaultUrl =
       process.env.DATABASE_URL ||
-      'postgresql://listix:listix@localhost:5432/listix?schema=public';
+      'postgresql://postgres:postgres@localhost:5432/listix?schema=public';
 
     const isLocalAvailable = await TestDbHelper.canConnect(defaultUrl);
 

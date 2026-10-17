@@ -7,4 +7,4 @@ process.env.PUBLIC_BASE_URL =
 process.env.APP_SCHEME = process.env.APP_SCHEME || 'listix';
 process.env.DATABASE_URL =
   process.env.DATABASE_URL ||
-  'postgresql://listix:listix@localhost:5432/listix?schema=public';
+  'postgresql://postgres:postgres@localhost:5432/listix?schema=public';
