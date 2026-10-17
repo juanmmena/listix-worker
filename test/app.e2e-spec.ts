@@ -4,11 +4,13 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
 import { DatabaseHealthIndicator } from '../src/modules/health/database-health.indicator';
+import { TestDbHelper } from './e2e/test-db.helper';
 
 describe('App (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
+    await TestDbHelper.setup();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -27,6 +29,7 @@ describe('App (e2e)', () => {
 
   afterAll(async () => {
     await app.close();
+    await TestDbHelper.teardown();
   });
 
   it('/health (GET)', async () => {

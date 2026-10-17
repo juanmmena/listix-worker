@@ -140,6 +140,21 @@ jobs:
     name: Lint, Build & Tests
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: listix
+          POSTGRES_PASSWORD: listix
+          POSTGRES_DB: listix
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U listix -d listix"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -173,6 +188,11 @@ jobs:
 
       - name: Run unit tests with coverage
         run: pnpm run test:cov
+
+      - name: Deploy Prisma migrations
+        run: pnpm run db:deploy
+        env:
+          DATABASE_URL: postgresql://listix:listix@localhost:5432/listix?schema=public
 
       - name: Run end-to-end tests
         run: pnpm run test:e2e
